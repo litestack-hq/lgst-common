@@ -1,11 +1,11 @@
 module github.com/litestack-hq/lgst-common
 
-go 1.19
+go 1.21
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dimuska139/go-email-normalizer v1.2.0
-	github.com/docker/docker v20.10.18+incompatible
+	github.com/docker/docker v24.0.2+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/golang-migrate/migrate/v4 v4.15.2
 	github.com/jmoiron/sqlx v1.3.5
@@ -37,7 +37,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect

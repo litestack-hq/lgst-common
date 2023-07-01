@@ -128,7 +128,11 @@ func PullImage(ctx context.Context, cli *client.Client, imageName string) error 
 }
 
 func StopContainer(ctx context.Context, cli *client.Client, id string) error {
-	return cli.ContainerStop(ctx, id, nil)
+	timeOut := int(30 * time.Second)
+	stopOptions := container.StopOptions{
+		Timeout: &timeOut,
+	}
+	return cli.ContainerStop(ctx, id, stopOptions)
 }
 
 // TODO: Add test
