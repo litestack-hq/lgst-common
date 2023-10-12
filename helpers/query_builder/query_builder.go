@@ -13,13 +13,14 @@ func buildInsertQuery(table string, input map[string]any) (string, []any) {
 	for i, v := range keys {
 		n := i + 1
 		key := v.String()
-		query += v.String()
+		query += key
 		if n < len(keys) {
 			query += ", "
 		}
 
 		values = append(values, input[key])
 	}
+
 	query += ") VALUES ("
 
 	for i := range keys {
@@ -35,16 +36,17 @@ func buildInsertQuery(table string, input map[string]any) (string, []any) {
 }
 
 func BuildInsertQueryFromStruct(table string, s any) (string, []any) {
+	tagName := "db"
+	input := map[string]any{}
 	value := reflect.ValueOf(s)
+
 	if value.Kind() == reflect.Ptr {
 		value = value.Elem()
 	}
 
-	input := map[string]any{}
-	tagName := "db"
-
 	for i := 0; i < value.NumField(); i++ {
 		tag := value.Type().Field(i).Tag.Get(tagName)
+
 		if tag == "" || tag == "-" {
 			continue
 		}
