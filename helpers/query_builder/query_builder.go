@@ -8,20 +8,21 @@ import (
 func buildInsertQuery(table string, input map[string]any) (string, []any) {
 	keys := reflect.ValueOf(input).MapKeys()
 	values := []any{}
+	fields := ""
 
 	query := fmt.Sprintf("INSERT INTO %s (", table)
 	for i, v := range keys {
 		n := i + 1
 		key := v.String()
-		query += key
+		fields += key
 		if n < len(keys) {
-			query += ", "
+			fields += ", "
 		}
 
 		values = append(values, input[key])
 	}
 
-	query += ") VALUES ("
+	query += fields + ") VALUES ("
 
 	for i := range keys {
 		n := i + 1
@@ -30,7 +31,8 @@ func buildInsertQuery(table string, input map[string]any) (string, []any) {
 			query += ", "
 		}
 	}
-	query += ")"
+
+	query += ") RETURNING *"
 
 	return query, values
 }
