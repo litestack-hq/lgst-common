@@ -53,7 +53,7 @@ func NormalizePhonenumber(opts NormalizePhonenumberOpts) (string, error) {
 	return phonenumbers.Format(n, phonenumbers.E164), nil
 }
 
-// TODO: Add test
+// TODO: Test NormalizeEmail
 func NormalizeEmail(email string) string {
 	n := emailNormalizer.NewNormalizer()
 	return n.Normalize(strings.ToLower(email))
@@ -135,7 +135,6 @@ func StopContainer(ctx context.Context, cli *client.Client, id string) error {
 	return cli.ContainerStop(ctx, id, stopOptions)
 }
 
-// TODO: Add test
 func GetFreePort() (int, error) {
 	tcpAddress, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err == nil {

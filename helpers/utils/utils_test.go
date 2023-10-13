@@ -18,5 +18,5 @@ func TestNormalizePhonenumberOpts(t *testing.T) {
 	assert.Nil(t, err2)
 	assert.Nil(t, err3)
 	assert.True(t, formatedNumber1 == formatedNumber2)
-	assert.True(t, "+108145070123" == formatedNumber3)
+	assert.True(t, formatedNumber3 == "+108145070123")
 }

@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: Add tests to verify that default envs are bound
 func TestNew(t *testing.T) {
 	conf := New()
 
