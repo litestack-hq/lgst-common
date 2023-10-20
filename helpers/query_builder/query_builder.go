@@ -5,7 +5,7 @@ import (
 	"reflect"
 )
 
-func buildInsertQuery(table string, input map[string]any) (string, []any) {
+func buildInsertQuery(table string, input map[string]any, skipConflicting bool) (string, []any) {
 	keys := reflect.ValueOf(input).MapKeys()
 	values := []any{}
 	fields := ""
@@ -32,12 +32,18 @@ func buildInsertQuery(table string, input map[string]any) (string, []any) {
 		}
 	}
 
-	query += ") RETURNING *"
+	query += ")"
+
+	if skipConflicting {
+		query += " ON CONFLICT DO NOTHING"
+	}
+
+	query += " RETURNING *"
 
 	return query, values
 }
 
-func BuildInsertQueryFromStruct(table string, s any) (string, []any) {
+func BuildInsertQueryFromStruct(table string, s any, skipConflicting bool) (string, []any) {
 	tagName := "db"
 	input := map[string]any{}
 	value := reflect.ValueOf(s)
@@ -65,5 +71,5 @@ func BuildInsertQueryFromStruct(table string, s any) (string, []any) {
 		input[tag] = value.Field(i).Interface()
 	}
 
-	return buildInsertQuery(table, input)
+	return buildInsertQuery(table, input, skipConflicting)
 }

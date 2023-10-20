@@ -7,7 +7,8 @@ import (
 )
 
 func TestBuildInsertQuery(t *testing.T) {
-	rx := `INSERT INTO users \((\b.*\b,\s){3}(\b.*\b)\) VALUES \(\$1, \$2, \$3, \$4\) RETURNING \*`
+	regularQueryRx := `INSERT INTO users \((\b.*\b,\s){3}(\b.*\b)\) VALUES \(\$1, \$2, \$3, \$4\) RETURNING \*`
+	safeQueryRx := `INSERT INTO users \((\b.*\b,\s){3}(\b.*\b)\) VALUES \(\$1, \$2, \$3, \$4\) ON CONFLICT DO NOTHING RETURNING \*`
 
 	input := struct {
 		Id            string   `db:"id"`
@@ -27,14 +28,17 @@ func TestBuildInsertQuery(t *testing.T) {
 	// NOTE: The order of the output slice might change.
 	// Asserting that will make the test flaky.
 	t.Run("Using a struct value", func(t *testing.T) {
-		query, values := BuildInsertQueryFromStruct("users", input)
-		assert.Regexp(t, rx, query)
+		query, values := BuildInsertQueryFromStruct("users", input, false)
+		queryIgnoringConflict, _ := BuildInsertQueryFromStruct("users", input, true)
+
+		assert.Regexp(t, regularQueryRx, query)
+		assert.Regexp(t, safeQueryRx, queryIgnoringConflict)
 		assert.NotNil(t, values)
 	})
 
 	t.Run("Using a pointer to struct", func(t *testing.T) {
-		query, values := BuildInsertQueryFromStruct("users", &input)
-		assert.Regexp(t, rx, query)
+		query, values := BuildInsertQueryFromStruct("users", &input, false)
+		assert.Regexp(t, regularQueryRx, query)
 		assert.NotNil(t, values)
 	})
 }
