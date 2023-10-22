@@ -11,13 +11,14 @@ import (
 	"strings"
 	"time"
 
+	"log/slog"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/jmoiron/sqlx"
 	"github.com/nyaruka/phonenumbers"
-	"github.com/rs/zerolog/log"
 
 	emailNormalizer "github.com/dimuska139/go-email-normalizer"
 	"github.com/golang-migrate/migrate/v4"
@@ -80,7 +81,7 @@ func RunMigrations(dbUrl string, source source.Driver) error {
 		return err
 	}
 
-	log.Info().Msg("running migrations")
+	slog.Info("running migrations")
 
 	if err := m.Up(); err != nil {
 		return err
@@ -98,7 +99,7 @@ func WaitForDb(dbUrl string) error {
 
 	defer db.Close()
 
-	log.Info().Msg("waiting for database")
+	slog.Info("waiting for database")
 
 	for timeout := time.After(time.Second * 30); ; {
 		select {
@@ -106,18 +107,18 @@ func WaitForDb(dbUrl string) error {
 			return errors.New("database connection timed out")
 		default:
 			if err := db.Ping(); err != nil {
-				log.Info().Msg("waiting...")
+				slog.Info("waiting...")
 				time.Sleep(time.Millisecond * 500)
 				continue
 			}
-			log.Info().Msg("database connected")
+			slog.Info("database connected")
 			return nil
 		}
 	}
 }
 
 func PullImage(ctx context.Context, cli *client.Client, imageName string) error {
-	log.Info().Msgf("pulling docker image: %s", imageName)
+	slog.Info("pulling docker image", slog.String("image-name", imageName))
 	out, err := cli.ImagePull(ctx, imageName, types.ImagePullOptions{})
 	if err != nil {
 		return err
