@@ -1,6 +1,8 @@
 package config
 
 import (
+	"log/slog"
+
 	"github.com/rs/zerolog/log"
 
 	"github.com/spf13/viper"
@@ -24,7 +26,7 @@ func New() *Config {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			log.Warn().Msg("failed to read config file")
+			slog.Warn("failed to read config file")
 		}
 	}
 
