@@ -2,7 +2,13 @@ package query_builder
 
 import (
 	"fmt"
+	"math"
 	"reflect"
+	"strings"
+)
+
+const (
+	TAG_NAME = "db"
 )
 
 func buildInsertQuery(table string, input map[string]any, skipConflicting bool) (string, []any) {
@@ -43,23 +49,75 @@ func buildInsertQuery(table string, input map[string]any, skipConflicting bool) 
 	return query, values
 }
 
-func BuildInsertQueryFromStruct(table string, s any, skipConflicting bool) (string, []any) {
-	tagName := "db"
-	input := map[string]any{}
-	value := reflect.ValueOf(s)
+func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (string, []string) {
+	cursorFields := []string{"uuid"}
+	query := fmt.Sprintf("SELECT * FROM %s", input.Table)
+	queryLimit := int(math.Abs(float64(input.Limit)) + 1)
+	orderBy := ""
 
-	if value.Kind() == reflect.Ptr {
-		value = value.Elem()
+	if ok, tag := tagExists(TAG_NAME, input.Sort.Field, model); ok && input.Sort.Order.IsValid() {
+		orderBy = fmt.Sprintf(
+			" ORDER BY %s %s",
+			input.Sort.Field,
+			input.Sort.Order,
+		)
+
+		cursorFields = append(cursorFields, tag)
+	} else {
+		cursorFields = append(cursorFields, "created_at")
 	}
 
-	for i := 0; i < value.NumField(); i++ {
-		tag := value.Type().Field(i).Tag.Get(tagName)
+	if input.NextCursor != "" {
+		query = fmt.Sprintf(
+			"SELECT * FROM %s WHERE (%s) > (%s)",
+			input.Table,
+			strings.Join(cursorFields, ","),
+			input.NextCursor,
+		)
+	}
 
-		if tag == "" || tag == "-" {
+	query += fmt.Sprintf("%s LIMIT %d", orderBy, queryLimit)
+
+	return query, cursorFields
+}
+
+func tagExists(tag string, value string, model any) (bool, string) {
+	modelValue := reflect.ValueOf(model)
+	if modelValue.Kind() == reflect.Ptr {
+		modelValue = modelValue.Elem()
+	}
+
+	for i := 0; i < modelValue.NumField(); i++ {
+		fieldName := modelValue.Type().Field(i).Tag.Get(TAG_NAME)
+
+		if fieldName == "" || fieldName == "-" {
 			continue
 		}
 
-		field := value.Field(i)
+		if strings.ToLower(fieldName) == value {
+			return true, fieldName
+		}
+	}
+
+	return false, tag
+}
+
+func BuildInsertQueryFromModel(table string, model any, skipConflicting bool) (string, []any) {
+	inputValues := map[string]any{}
+	modelValue := reflect.ValueOf(model)
+
+	if modelValue.Kind() == reflect.Ptr {
+		modelValue = modelValue.Elem()
+	}
+
+	for i := 0; i < modelValue.NumField(); i++ {
+		tableFieldName := modelValue.Type().Field(i).Tag.Get(TAG_NAME)
+
+		if tableFieldName == "" || tableFieldName == "-" {
+			continue
+		}
+
+		field := modelValue.Field(i)
 		kind := field.Kind()
 
 		if kind == reflect.String || kind == reflect.Slice || kind == reflect.Map {
@@ -68,8 +126,8 @@ func BuildInsertQueryFromStruct(table string, s any, skipConflicting bool) (stri
 			}
 		}
 
-		input[tag] = value.Field(i).Interface()
+		inputValues[tableFieldName] = modelValue.Field(i).Interface()
 	}
 
-	return buildInsertQuery(table, input, skipConflicting)
+	return buildInsertQuery(table, inputValues, skipConflicting)
 }

@@ -2,9 +2,59 @@ package query_builder
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestBuildPaginationQueryFromModel(t *testing.T) {
+	type User struct {
+		Id        string    `db:"id" json:"id" fake:"{uuid}"`
+		Active    bool      `db:"active" json:"active" fake:"{bool}"`
+		Name      string    `db:"name" json:"name" fake:"{name}"`
+		CreatedAt time.Time `db:"created_at" json:"created_at" fake:"skip"`
+	}
+
+	query, nextCursor := BuildPaginationQueryFromModel(PaginationQueryInput{
+		Table: "users",
+		Limit: 5,
+	}, User{})
+
+	assert.Equal(t, "SELECT * FROM users LIMIT 6", query)
+	assert.Equal(t, []string{"uuid", "created_at"}, nextCursor)
+
+	query, nextCursor = BuildPaginationQueryFromModel(PaginationQueryInput{
+		Table:      "users",
+		Limit:      5,
+		NextCursor: "NEXT_CURSOR",
+		Sort: struct {
+			Field string
+			Order TableSortOrder
+		}{
+			Field: "",
+			Order: "ASC",
+		},
+	}, &User{})
+
+	assert.Equal(t, "SELECT * FROM users WHERE (uuid,created_at) > (NEXT_CURSOR) LIMIT 6", query)
+	assert.Equal(t, []string{"uuid", "created_at"}, nextCursor)
+
+	query, nextCursor = BuildPaginationQueryFromModel(PaginationQueryInput{
+		Table:      "users",
+		Limit:      5,
+		NextCursor: "NEXT_CURSOR",
+		Sort: struct {
+			Field string
+			Order TableSortOrder
+		}{
+			Field: "name",
+			Order: "ASC",
+		},
+	}, &User{})
+
+	assert.Equal(t, "SELECT * FROM users WHERE (uuid,name) > (NEXT_CURSOR) ORDER BY name ASC LIMIT 6", query)
+	assert.Equal(t, []string{"uuid", "name"}, nextCursor)
+}
 
 func TestBuildInsertQuery(t *testing.T) {
 	regularQueryRx := `INSERT INTO users \((\b.*\b,\s){3}(\b.*\b)\) VALUES \(\$1, \$2, \$3, \$4\) RETURNING \*`
@@ -28,8 +78,8 @@ func TestBuildInsertQuery(t *testing.T) {
 	// NOTE: The order of the output slice might change.
 	// Asserting that will make the test flaky.
 	t.Run("Using a struct value", func(t *testing.T) {
-		query, values := BuildInsertQueryFromStruct("users", input, false)
-		queryIgnoringConflict, _ := BuildInsertQueryFromStruct("users", input, true)
+		query, values := BuildInsertQueryFromModel("users", input, false)
+		queryIgnoringConflict, _ := BuildInsertQueryFromModel("users", input, true)
 
 		assert.Regexp(t, regularQueryRx, query)
 		assert.Regexp(t, safeQueryRx, queryIgnoringConflict)
@@ -37,7 +87,7 @@ func TestBuildInsertQuery(t *testing.T) {
 	})
 
 	t.Run("Using a pointer to struct", func(t *testing.T) {
-		query, values := BuildInsertQueryFromStruct("users", &input, false)
+		query, values := BuildInsertQueryFromModel("users", &input, false)
 		assert.Regexp(t, regularQueryRx, query)
 		assert.NotNil(t, values)
 	})
