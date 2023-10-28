@@ -54,7 +54,7 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 	}, User{})
 
 	assert.Equal(t, "SELECT * FROM users LIMIT 6", query)
-	assert.Equal(t, []string{"uuid", "created_at"}, nextCursor)
+	assert.Equal(t, []string{"id", "created_at"}, nextCursor)
 
 	query, nextCursor = BuildPaginationQueryFromModel(PaginationQueryInput{
 		Table:      "users",
@@ -69,8 +69,8 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 		},
 	}, &User{})
 
-	assert.Equal(t, "SELECT * FROM users WHERE (uuid,created_at) > (NEXT_CURSOR) LIMIT 6", query)
-	assert.Equal(t, []string{"uuid", "created_at"}, nextCursor)
+	assert.Equal(t, "SELECT * FROM users WHERE (id,created_at) > (NEXT_CURSOR) LIMIT 6", query)
+	assert.Equal(t, []string{"id", "created_at"}, nextCursor)
 
 	query, nextCursor = BuildPaginationQueryFromModel(PaginationQueryInput{
 		Table:      "users",
@@ -85,8 +85,8 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 		},
 	}, &User{})
 
-	assert.Equal(t, "SELECT * FROM users WHERE (uuid,name) > (NEXT_CURSOR) ORDER BY name ASC LIMIT 6", query)
-	assert.Equal(t, []string{"uuid", "name"}, nextCursor)
+	assert.Equal(t, "SELECT * FROM users WHERE (id,name) > (NEXT_CURSOR) ORDER BY name ASC LIMIT 6", query)
+	assert.Equal(t, []string{"id", "name"}, nextCursor)
 }
 
 func TestBuildInsertQuery(t *testing.T) {

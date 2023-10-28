@@ -77,20 +77,19 @@ func getTagValue(nextItem any, tagName string) string {
 	for i := 0; i < nextItemValue.NumField(); i++ {
 		fieldName := nextItemValue.Type().Field(i).Tag.Get(TAG_NAME)
 		field := nextItemValue.Field(i)
-		kind := field.Kind()
 
-		if fieldName != tagName || kind != reflect.String {
+		if fieldName != tagName {
 			continue
 		}
 
-		return nextItemValue.Field(i).String()
+		return fmt.Sprintf("%v", field.Interface())
 	}
 
 	return ""
 }
 
 func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (string, []string) {
-	cursorFields := []string{"uuid"}
+	cursorFields := []string{"id"}
 	query := fmt.Sprintf("SELECT * FROM %s", input.Table)
 	queryLimit := int(math.Abs(float64(input.Limit)) + 1)
 	orderBy := ""
