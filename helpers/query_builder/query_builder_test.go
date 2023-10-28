@@ -7,6 +7,39 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestBuildNextCursor(t *testing.T) {
+	type User struct {
+		Id        string    `db:"id" json:"id" fake:"{uuid}"`
+		Active    bool      `db:"active" json:"active" fake:"{bool}"`
+		Name      string    `db:"name" json:"name" fake:"{name}"`
+		CreatedAt time.Time `db:"created_at" json:"created_at" fake:"skip"`
+	}
+
+	users := []any{
+		User{
+			Id:        "1",
+			Name:      "John Doe",
+			Active:    true,
+			CreatedAt: time.Now(),
+		},
+		User{
+			Id:        "2",
+			Name:      "Jane Doe",
+			Active:    true,
+			CreatedAt: time.Now(),
+		},
+		User{
+			Id:        "3",
+			Name:      "Mike Doe",
+			Active:    true,
+			CreatedAt: time.Now(),
+		},
+	}
+
+	assert.Equal(t, "Mike Doe,3", BuildNextCursor(users, 2, []string{"name", "id"}))
+	assert.Equal(t, "", BuildNextCursor(users, 5, []string{"name", "id"}))
+}
+
 func TestBuildPaginationQueryFromModel(t *testing.T) {
 	type User struct {
 		Id        string    `db:"id" json:"id" fake:"{uuid}"`

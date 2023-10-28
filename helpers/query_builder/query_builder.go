@@ -49,6 +49,46 @@ func buildInsertQuery(table string, input map[string]any, skipConflicting bool) 
 	return query, values
 }
 
+func BuildNextCursor(results []any, length int, fields []string) string {
+	if results == nil {
+		return ""
+	}
+
+	if len(results) <= length {
+		return ""
+	}
+
+	nextItem := results[length]
+	values := make([]string, len(fields))
+
+	for i, field := range fields {
+		values[i] = getTagValue(nextItem, field)
+	}
+
+	return strings.Join(values, ",")
+}
+
+func getTagValue(nextItem any, tagName string) string {
+	nextItemValue := reflect.ValueOf(nextItem)
+	if nextItemValue.Kind() == reflect.Ptr {
+		nextItemValue = nextItemValue.Elem()
+	}
+
+	for i := 0; i < nextItemValue.NumField(); i++ {
+		fieldName := nextItemValue.Type().Field(i).Tag.Get(TAG_NAME)
+		field := nextItemValue.Field(i)
+		kind := field.Kind()
+
+		if fieldName != tagName || kind != reflect.String {
+			continue
+		}
+
+		return nextItemValue.Field(i).String()
+	}
+
+	return ""
+}
+
 func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (string, []string) {
 	cursorFields := []string{"uuid"}
 	query := fmt.Sprintf("SELECT * FROM %s", input.Table)
