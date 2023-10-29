@@ -26,7 +26,7 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 	query, args = BuildPaginationQueryFromModel(PaginationQueryInput{
 		Table:      "users",
 		Limit:      5,
-		NextCursor: "1698519293,a59279e3-b410-4d22-93bb-ae58de514f76",
+		NextCursor: "MjAyMy0xMC0yOFQxODo1NDo1My41MjQxNTJaLDFkMjEzNDY1LTRjYzktNGI4Yy1hM2JmLWQ5MTFiODhiMTk3Nw==",
 		Sort: struct {
 			Field string
 			Order TableSortOrder
@@ -36,13 +36,13 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 		},
 	}, &User{})
 
-	assert.Equal(t, "SELECT * FROM users WHERE (created_at,id) > ($1,$2) ORDER BY created_at ASC, id ASC LIMIT 6", query)
+	assert.Equal(t, "SELECT * FROM users WHERE (created_at, id) > ($1, $2) ORDER BY created_at ASC, id ASC LIMIT 6", query)
 	assert.Equal(t, 2, len(args))
 
 	query, args = BuildPaginationQueryFromModel(PaginationQueryInput{
 		Table:      "users",
 		Limit:      5,
-		NextCursor: "1698519293,a59279e3-b410-4d22-93bb-ae58de514f76",
+		NextCursor: "MjAyMy0xMC0yOFQxODo1NDo1My41MjQxNTJaLDFkMjEzNDY1LTRjYzktNGI4Yy1hM2JmLWQ5MTFiODhiMTk3Nw==",
 		Sort: struct {
 			Field string
 			Order TableSortOrder
@@ -52,7 +52,7 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 		},
 	}, &User{})
 
-	assert.Equal(t, "SELECT * FROM users WHERE (created_at,id) > ($1,$2) ORDER BY created_at ASC, id ASC, name ASC LIMIT 6", query)
+	assert.Equal(t, "SELECT * FROM users WHERE (created_at, id) > ($1, $2) ORDER BY created_at ASC, id ASC, name ASC LIMIT 6", query)
 	assert.Equal(t, 2, len(args))
 }
 

@@ -1,11 +1,11 @@
 package query_builder
 
 import (
+	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"math"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -13,6 +13,58 @@ import (
 const (
 	TAG_NAME = "db"
 )
+
+func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (string, []any) {
+	queryLimit := 1
+	query := fmt.Sprintf("SELECT * FROM %s", input.Table)
+	orderBy := " ORDER BY created_at ASC, id ASC"
+	args := []any{}
+	queryLimit = int(queryLimit + int(math.Abs(float64(input.Limit))))
+
+	if ok, tag := tagExists(TAG_NAME, input.Sort.Field, model); ok && input.Sort.Order.IsValid() {
+		orderBy += fmt.Sprintf(
+			", %s %s",
+			tag,
+			input.Sort.Order,
+		)
+	}
+
+	if input.NextCursor != "" {
+		decodedBytes, err := base64.StdEncoding.DecodeString(input.NextCursor)
+		if err != nil {
+			slog.Error(
+				"failed to decode cursor",
+				"value", input.NextCursor,
+				"error", err,
+			)
+		}
+
+		cursor := strings.Split(string(decodedBytes), ",")
+		if len(cursor) == 2 {
+			query = fmt.Sprintf(
+				"SELECT * FROM %s WHERE (created_at, id) > ($1, $2)",
+				input.Table,
+			)
+
+			parsedTime, err := time.Parse(time.RFC3339Nano, cursor[0])
+			if err != nil {
+				slog.Error(
+					"failed to parse cursor created_at",
+					"value", cursor[0],
+					"format", time.RFC3339Nano,
+					"error", err,
+				)
+			}
+
+			args = append(args, parsedTime)
+			args = append(args, cursor[1])
+		}
+	}
+
+	query += fmt.Sprintf("%s LIMIT %d", orderBy, queryLimit)
+
+	return query, args
+}
 
 func buildInsertQuery(table string, input map[string]any, skipConflicting bool) (string, []any) {
 	keys := reflect.ValueOf(input).MapKeys()
@@ -50,43 +102,6 @@ func buildInsertQuery(table string, input map[string]any, skipConflicting bool) 
 	query += " RETURNING *"
 
 	return query, values
-}
-
-func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (string, []any) {
-	queryLimit := 1
-	query := fmt.Sprintf("SELECT * FROM %s", input.Table)
-	orderBy := " ORDER BY created_at ASC, id ASC"
-	args := []any{}
-	queryLimit = int(queryLimit + int(math.Abs(float64(input.Limit))))
-
-	if ok, tag := tagExists(TAG_NAME, input.Sort.Field, model); ok && input.Sort.Order.IsValid() {
-		orderBy += fmt.Sprintf(
-			", %s %s",
-			tag,
-			input.Sort.Order,
-		)
-	}
-
-	if input.NextCursor != "" {
-		cursor := strings.Split(input.NextCursor, ",")
-		if len(cursor) == 2 {
-			query = fmt.Sprintf(
-				"SELECT * FROM %s WHERE (created_at,id) > ($1,$2)",
-				input.Table,
-			)
-
-			if unixTimeInt, err := strconv.ParseInt(cursor[0], 10, 64); err != nil {
-				slog.Error("failed to convert cursor timestamp to time.Time", "error", err)
-			} else {
-				args = append(args, time.UnixMicro(unixTimeInt))
-			}
-			args = append(args, cursor[1])
-		}
-	}
-
-	query += fmt.Sprintf("%s LIMIT %d", orderBy, queryLimit)
-
-	return query, args
 }
 
 func tagExists(tag string, value string, model any) (bool, string) {
