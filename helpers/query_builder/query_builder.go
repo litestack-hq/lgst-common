@@ -55,13 +55,13 @@ func buildInsertQuery(table string, input map[string]any, skipConflicting bool) 
 func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (string, []any) {
 	queryLimit := 1
 	query := fmt.Sprintf("SELECT * FROM %s", input.Table)
-	orderBy := ""
+	orderBy := " ORDER BY created_at ASC, id ASC"
 	args := []any{}
 	queryLimit = int(queryLimit + int(math.Abs(float64(input.Limit))))
 
 	if ok, tag := tagExists(TAG_NAME, input.Sort.Field, model); ok && input.Sort.Order.IsValid() {
-		orderBy = fmt.Sprintf(
-			" ORDER BY %s %s",
+		orderBy += fmt.Sprintf(
+			", %s %s",
 			tag,
 			input.Sort.Order,
 		)
