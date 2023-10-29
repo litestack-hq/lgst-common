@@ -2,8 +2,10 @@ package query_builder
 
 import (
 	"fmt"
+	"log/slog"
 	"math"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -50,55 +52,11 @@ func buildInsertQuery(table string, input map[string]any, skipConflicting bool) 
 	return query, values
 }
 
-func BuildNextCursor(results []any, length int) string {
-	if results == nil {
-		return ""
-	}
-
-	if len(results) <= length {
-		return ""
-	}
-
-	nextItem := results[length]
-	values := make([]string, 2)
-
-	values[0] = getCursorFieldValue(nextItem, "created_at")
-	values[1] = getCursorFieldValue(nextItem, "id")
-
-	return strings.Join(values, ",")
-}
-
-func getCursorFieldValue(nextItem any, tagName string) string {
-	nextItemValue := reflect.ValueOf(nextItem)
-	if nextItemValue.Kind() == reflect.Ptr {
-		nextItemValue = nextItemValue.Elem()
-	}
-
-	for i := 0; i < nextItemValue.NumField(); i++ {
-		fieldName := nextItemValue.Type().Field(i).Tag.Get(TAG_NAME)
-		field := nextItemValue.Field(i)
-
-		if fieldName != tagName {
-			continue
-		}
-
-		switch v := field.Interface().(type) {
-		case string:
-			return v
-		case time.Time:
-			return fmt.Sprintf("%d", v.Unix())
-		default:
-			return ""
-		}
-	}
-
-	return ""
-}
-
-func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) string {
+func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (string, []any) {
 	queryLimit := 1
 	query := fmt.Sprintf("SELECT * FROM %s", input.Table)
 	orderBy := ""
+	args := []any{}
 	queryLimit = int(queryLimit + int(math.Abs(float64(input.Limit))))
 
 	if ok, tag := tagExists(TAG_NAME, input.Sort.Field, model); ok && input.Sort.Order.IsValid() {
@@ -110,17 +68,25 @@ func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) string
 	}
 
 	if input.NextCursor != "" {
-		query = fmt.Sprintf(
-			"SELECT * FROM %s WHERE (%s) > (%s)",
-			input.Table,
-			"created_at,id",
-			input.NextCursor,
-		)
+		cursor := strings.Split(input.NextCursor, ",")
+		if len(cursor) == 2 {
+			query = fmt.Sprintf(
+				"SELECT * FROM %s WHERE (created_at,id) > ($1,$2)",
+				input.Table,
+			)
+
+			if unixTimeInt, err := strconv.ParseInt(cursor[0], 10, 64); err != nil {
+				slog.Error("failed to convert cursor timestamp to time.Time", "error", err)
+			} else {
+				args = append(args, time.Unix(unixTimeInt, 0))
+			}
+			args = append(args, cursor[1])
+		}
 	}
 
 	query += fmt.Sprintf("%s LIMIT %d", orderBy, queryLimit)
 
-	return query
+	return query, args
 }
 
 func tagExists(tag string, value string, model any) (bool, string) {
