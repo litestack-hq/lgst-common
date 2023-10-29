@@ -11,8 +11,8 @@ func (value *TableSortOrder) IsValid() bool {
 
 type PaginationQueryInput struct {
 	Table      string
-	NextCursor string
 	Limit      int
+	NextCursor string
 	Sort       struct {
 		Field string
 		Order TableSortOrder

@@ -8,6 +8,8 @@ import (
 )
 
 func TestBuildNextCursor(t *testing.T) {
+	cursorRx := `(\d.*),(\d.*)`
+
 	type User struct {
 		Id        string    `db:"id" json:"id" fake:"{uuid}"`
 		Active    bool      `db:"active" json:"active" fake:"{bool}"`
@@ -36,8 +38,8 @@ func TestBuildNextCursor(t *testing.T) {
 		},
 	}
 
-	assert.Equal(t, "Mike Doe,3", BuildNextCursor(users, 2, []string{"name", "id"}))
-	assert.Equal(t, "", BuildNextCursor(users, 5, []string{"name", "id"}))
+	assert.Regexp(t, cursorRx, BuildNextCursor(users, 2))
+	assert.Equal(t, "", BuildNextCursor(users, 5))
 }
 
 func TestBuildPaginationQueryFromModel(t *testing.T) {
@@ -48,15 +50,14 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 		CreatedAt time.Time `db:"created_at" json:"created_at" fake:"skip"`
 	}
 
-	query, nextCursor := BuildPaginationQueryFromModel(PaginationQueryInput{
+	query := BuildPaginationQueryFromModel(PaginationQueryInput{
 		Table: "users",
 		Limit: 5,
 	}, User{})
 
 	assert.Equal(t, "SELECT * FROM users LIMIT 6", query)
-	assert.Equal(t, []string{"id", "created_at"}, nextCursor)
 
-	query, nextCursor = BuildPaginationQueryFromModel(PaginationQueryInput{
+	query = BuildPaginationQueryFromModel(PaginationQueryInput{
 		Table:      "users",
 		Limit:      5,
 		NextCursor: "NEXT_CURSOR",
@@ -69,10 +70,9 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 		},
 	}, &User{})
 
-	assert.Equal(t, "SELECT * FROM users WHERE (id,created_at) > (NEXT_CURSOR) LIMIT 6", query)
-	assert.Equal(t, []string{"id", "created_at"}, nextCursor)
+	assert.Equal(t, "SELECT * FROM users WHERE (created_at,id) > (NEXT_CURSOR) LIMIT 6", query)
 
-	query, nextCursor = BuildPaginationQueryFromModel(PaginationQueryInput{
+	query = BuildPaginationQueryFromModel(PaginationQueryInput{
 		Table:      "users",
 		Limit:      5,
 		NextCursor: "NEXT_CURSOR",
@@ -85,8 +85,7 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 		},
 	}, &User{})
 
-	assert.Equal(t, "SELECT * FROM users WHERE (id,name) > (NEXT_CURSOR) ORDER BY name ASC LIMIT 6", query)
-	assert.Equal(t, []string{"id", "name"}, nextCursor)
+	assert.Equal(t, "SELECT * FROM users WHERE (created_at,id) > (NEXT_CURSOR) ORDER BY name ASC LIMIT 6", query)
 }
 
 func TestBuildInsertQuery(t *testing.T) {

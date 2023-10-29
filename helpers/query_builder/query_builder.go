@@ -5,6 +5,7 @@ import (
 	"math"
 	"reflect"
 	"strings"
+	"time"
 )
 
 const (
@@ -49,7 +50,7 @@ func buildInsertQuery(table string, input map[string]any, skipConflicting bool) 
 	return query, values
 }
 
-func BuildNextCursor(results []any, length int, fields []string) string {
+func BuildNextCursor(results []any, length int) string {
 	if results == nil {
 		return ""
 	}
@@ -59,16 +60,15 @@ func BuildNextCursor(results []any, length int, fields []string) string {
 	}
 
 	nextItem := results[length]
-	values := make([]string, len(fields))
+	values := make([]string, 2)
 
-	for i, field := range fields {
-		values[i] = getTagValue(nextItem, field)
-	}
+	values[0] = getCursorFieldValue(nextItem, "created_at")
+	values[1] = getCursorFieldValue(nextItem, "id")
 
 	return strings.Join(values, ",")
 }
 
-func getTagValue(nextItem any, tagName string) string {
+func getCursorFieldValue(nextItem any, tagName string) string {
 	nextItemValue := reflect.ValueOf(nextItem)
 	if nextItemValue.Kind() == reflect.Ptr {
 		nextItemValue = nextItemValue.Elem()
@@ -82,42 +82,45 @@ func getTagValue(nextItem any, tagName string) string {
 			continue
 		}
 
-		return fmt.Sprintf("%v", field.Interface())
+		switch v := field.Interface().(type) {
+		case string:
+			return v
+		case time.Time:
+			return fmt.Sprintf("%d", v.Unix())
+		default:
+			return ""
+		}
 	}
 
 	return ""
 }
 
-func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (string, []string) {
-	cursorFields := []string{"id"}
+func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) string {
+	queryLimit := 1
 	query := fmt.Sprintf("SELECT * FROM %s", input.Table)
-	queryLimit := int(math.Abs(float64(input.Limit)) + 1)
 	orderBy := ""
+	queryLimit = int(queryLimit + int(math.Abs(float64(input.Limit))))
 
 	if ok, tag := tagExists(TAG_NAME, input.Sort.Field, model); ok && input.Sort.Order.IsValid() {
 		orderBy = fmt.Sprintf(
 			" ORDER BY %s %s",
-			input.Sort.Field,
+			tag,
 			input.Sort.Order,
 		)
-
-		cursorFields = append(cursorFields, tag)
-	} else {
-		cursorFields = append(cursorFields, "created_at")
 	}
 
 	if input.NextCursor != "" {
 		query = fmt.Sprintf(
 			"SELECT * FROM %s WHERE (%s) > (%s)",
 			input.Table,
-			strings.Join(cursorFields, ","),
+			"created_at,id",
 			input.NextCursor,
 		)
 	}
 
 	query += fmt.Sprintf("%s LIMIT %d", orderBy, queryLimit)
 
-	return query, cursorFields
+	return query
 }
 
 func tagExists(tag string, value string, model any) (bool, string) {
