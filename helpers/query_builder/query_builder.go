@@ -78,7 +78,7 @@ func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (strin
 			if unixTimeInt, err := strconv.ParseInt(cursor[0], 10, 64); err != nil {
 				slog.Error("failed to convert cursor timestamp to time.Time", "error", err)
 			} else {
-				args = append(args, time.Unix(unixTimeInt, 0))
+				args = append(args, time.UnixMicro(unixTimeInt))
 			}
 			args = append(args, cursor[1])
 		}
