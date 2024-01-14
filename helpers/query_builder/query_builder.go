@@ -21,10 +21,10 @@ func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (strin
 	args := []any{}
 	queryLimit = int(queryLimit + int(math.Abs(float64(input.Limit))))
 
-	if ok, tag := tagExists(TAG_NAME, input.Sort.Field, model); ok && input.Sort.Order.IsValid() {
+	if ok, fieldName := getFieldNameIfExists(TAG_NAME, input.Sort.Field, model); ok && input.Sort.Order.IsValid() {
 		orderBy += fmt.Sprintf(
 			", %s %s",
-			tag,
+			fieldName,
 			input.Sort.Order,
 		)
 	}
@@ -104,7 +104,7 @@ func buildInsertQuery(table string, input map[string]any, skipConflicting bool) 
 	return query, values
 }
 
-func tagExists(tag string, value string, model any) (bool, string) {
+func getFieldNameIfExists(tag string, value string, model any) (bool, string) {
 	modelValue := reflect.ValueOf(model)
 	if modelValue.Kind() == reflect.Ptr {
 		modelValue = modelValue.Elem()
@@ -122,7 +122,7 @@ func tagExists(tag string, value string, model any) (bool, string) {
 		}
 	}
 
-	return false, tag
+	return false, ""
 }
 
 func BuildInsertQueryFromModel(table string, model any, skipConflicting bool) (string, []any) {
