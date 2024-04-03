@@ -196,7 +196,7 @@ func CreateDbContainer(ctx context.Context, cli *client.Client, config DbConfig)
 		dbHost = "gateway.docker.internal"
 	}
 
-	if err := cli.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{}); err != nil {
+	if err := cli.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return "", "", err
 	}
 
