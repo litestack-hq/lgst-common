@@ -19,13 +19,15 @@ func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (strin
 	query := fmt.Sprintf("SELECT * FROM %s", input.Table)
 	args := []any{}
 	queryLimit = int(queryLimit + int(math.Abs(float64(input.Limit))))
-
 	orderBy := " ORDER BY created_at ASC, id ASC"
 
-	if ok, fieldName := getFieldNameIfExists(TAG_NAME, input.Sort.Field, model); ok && input.Sort.Order.IsValid() {
+	useCustomSorting, sortFieldName := getFieldNameIfExists(TAG_NAME, input.Sort.Field, model)
+	useCustomSorting = useCustomSorting && input.Sort.Order.IsValid()
+
+	if useCustomSorting {
 		orderBy = fmt.Sprintf(
 			" ORDER BY %s %s, id ASC",
-			fieldName,
+			sortFieldName,
 			input.Sort.Order,
 		)
 	}
@@ -42,22 +44,24 @@ func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (strin
 
 		cursor := strings.Split(string(decodedBytes), ",")
 		if len(cursor) == 2 {
-			query = fmt.Sprintf(
-				"SELECT * FROM %s WHERE (created_at, id) > ($1, $2)",
-				input.Table,
-			)
+			query = fmt.Sprintf("SELECT * FROM %s WHERE id > $1", input.Table)
 
-			parsedTime, err := time.Parse(time.RFC3339Nano, cursor[0])
-			if err != nil {
-				slog.Error(
-					"failed to parse cursor created_at",
-					"value", cursor[0],
-					"format", time.RFC3339Nano,
-					"error", err,
-				)
+			if !useCustomSorting {
+				query = fmt.Sprintf("SELECT * FROM %s WHERE (created_at, id) > ($1, $2)", input.Table)
+				parsedTime, err := time.Parse(time.RFC3339Nano, cursor[0])
+
+				if err != nil {
+					slog.Error(
+						"failed to parse cursor created_at",
+						"value", cursor[0],
+						"format", time.RFC3339Nano,
+						"error", err,
+					)
+				}
+
+				args = append(args, parsedTime)
 			}
 
-			args = append(args, parsedTime)
 			args = append(args, cursor[1])
 		}
 	}
