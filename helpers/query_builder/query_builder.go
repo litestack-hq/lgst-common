@@ -17,13 +17,14 @@ const (
 func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (string, []any) {
 	queryLimit := 1
 	query := fmt.Sprintf("SELECT * FROM %s", input.Table)
-	orderBy := " ORDER BY created_at ASC, id ASC"
 	args := []any{}
 	queryLimit = int(queryLimit + int(math.Abs(float64(input.Limit))))
 
+	orderBy := " ORDER BY created_at ASC, id ASC"
+
 	if ok, fieldName := getFieldNameIfExists(TAG_NAME, input.Sort.Field, model); ok && input.Sort.Order.IsValid() {
-		orderBy += fmt.Sprintf(
-			", %s %s",
+		orderBy = fmt.Sprintf(
+			" ORDER BY %s %s, id ASC",
 			fieldName,
 			input.Sort.Order,
 		)
@@ -104,7 +105,7 @@ func buildInsertQuery(table string, input map[string]any, skipConflicting bool) 
 	return query, values
 }
 
-func getFieldNameIfExists(tag string, value string, model any) (bool, string) {
+func getFieldNameIfExists(_ string, value string, model any) (bool, string) {
 	modelValue := reflect.ValueOf(model)
 	if modelValue.Kind() == reflect.Ptr {
 		modelValue = modelValue.Elem()

@@ -52,7 +52,7 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 		},
 	}, &User{})
 
-	assert.Equal(t, "SELECT * FROM users WHERE (created_at, id) > ($1, $2) ORDER BY created_at ASC, id ASC, name ASC LIMIT 6", query)
+	assert.Equal(t, "SELECT * FROM users WHERE (created_at, id) > ($1, $2) ORDER BY name ASC, id ASC LIMIT 6", query)
 	assert.Equal(t, 2, len(args))
 }
 
