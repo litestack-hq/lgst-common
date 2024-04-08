@@ -10,10 +10,10 @@ func (value *TableSortOrder) IsValid() bool {
 }
 
 type PaginationQueryInput struct {
-	Table      string
-	Limit      int
-	NextCursor string
-	Sort       struct {
+	InitialQuery string
+	Limit        int
+	NextCursor   string
+	Sort         struct {
 		Field string
 		Order TableSortOrder
 	}

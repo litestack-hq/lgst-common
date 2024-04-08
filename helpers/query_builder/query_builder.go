@@ -16,7 +16,7 @@ const (
 
 func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (string, []any) {
 	queryLimit := 1
-	query := fmt.Sprintf("SELECT * FROM %s", input.Table)
+	query := input.InitialQuery
 	args := []any{}
 	queryLimit = int(queryLimit + int(math.Abs(float64(input.Limit))))
 	orderBy := " ORDER BY created_at ASC, id ASC"
@@ -44,10 +44,10 @@ func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (strin
 
 		cursor := strings.Split(string(decodedBytes), ",")
 		if len(cursor) == 2 {
-			query = fmt.Sprintf("SELECT * FROM %s WHERE id > $1", input.Table)
+			query = fmt.Sprintf("%s WHERE id > $1", input.InitialQuery)
 
 			if !useCustomSorting {
-				query = fmt.Sprintf("SELECT * FROM %s WHERE (created_at, id) > ($1, $2)", input.Table)
+				query = fmt.Sprintf("%s WHERE (created_at, id) > ($1, $2)", input.InitialQuery)
 				parsedTime, err := time.Parse(time.RFC3339Nano, cursor[0])
 
 				if err != nil {

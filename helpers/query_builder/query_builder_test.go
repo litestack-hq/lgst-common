@@ -16,17 +16,17 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 	}
 
 	query, args := BuildPaginationQueryFromModel(PaginationQueryInput{
-		Table: "users",
-		Limit: 5,
+		InitialQuery: "SELECT * FROM users",
+		Limit:        5,
 	}, User{})
 
 	assert.Equal(t, "SELECT * FROM users ORDER BY created_at ASC, id ASC LIMIT 6", query)
 	assert.Equal(t, 0, len(args))
 
 	query, args = BuildPaginationQueryFromModel(PaginationQueryInput{
-		Table:      "users",
-		Limit:      5,
-		NextCursor: "MjAyMy0xMC0yOFQxODo1NDo1My41MjQxNTJaLDFkMjEzNDY1LTRjYzktNGI4Yy1hM2JmLWQ5MTFiODhiMTk3Nw==",
+		InitialQuery: "SELECT * FROM users",
+		Limit:        5,
+		NextCursor:   "MjAyMy0xMC0yOFQxODo1NDo1My41MjQxNTJaLDFkMjEzNDY1LTRjYzktNGI4Yy1hM2JmLWQ5MTFiODhiMTk3Nw==",
 		Sort: struct {
 			Field string
 			Order TableSortOrder
@@ -40,9 +40,9 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 	assert.Equal(t, 2, len(args))
 
 	query, args = BuildPaginationQueryFromModel(PaginationQueryInput{
-		Table:      "users",
-		Limit:      5,
-		NextCursor: "MjAyMy0xMC0yOFQxODo1NDo1My41MjQxNTJaLDFkMjEzNDY1LTRjYzktNGI4Yy1hM2JmLWQ5MTFiODhiMTk3Nw==",
+		InitialQuery: "SELECT * FROM users",
+		Limit:        5,
+		NextCursor:   "MjAyMy0xMC0yOFQxODo1NDo1My41MjQxNTJaLDFkMjEzNDY1LTRjYzktNGI4Yy1hM2JmLWQ5MTFiODhiMTk3Nw==",
 		Sort: struct {
 			Field string
 			Order TableSortOrder
