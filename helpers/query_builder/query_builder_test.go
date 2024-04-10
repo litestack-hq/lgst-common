@@ -92,3 +92,44 @@ func TestBuildInsertQuery(t *testing.T) {
 		assert.NotNil(t, values)
 	})
 }
+
+func TestBuildUpdateQuery(t *testing.T) {
+	regularQueryRx := `UPDATE users SET (\b.*\b = \?,? ?){3}WHERE id = \? RETURNING \*`
+	safeQueryRx := `UPDATE users SET (\b.*\b = \?,? ?){3}WHERE id = \? ON CONFLICT DO NOTHING RETURNING \*`
+
+	input := struct {
+		Id            string   `db:"id"`
+		Name          string   `db:"name"`
+		StringSlice   []string `db:"val"`
+		WalletBalance int      `db:"wallet_balance"`
+		Ignore1       string   `db:"-"`
+		Ignore2       string
+	}{
+		Id:            "12345",
+		Name:          "John",
+		StringSlice:   []string{"Hi"},
+		WalletBalance: 500,
+		Ignore1:       "ignore1",
+	}
+
+	/*
+		NOTE: The order of the output slice might change.
+		Asserting that will make the test flaky.
+	*/
+	t.Run("Using a struct value", func(t *testing.T) {
+		query, values := BuildUpdateQueryFromModel("users", input, input.Id, false)
+		queryIgnoringConflict, _ := BuildUpdateQueryFromModel("users", input, input.Id, true)
+
+		assert.Regexp(t, regularQueryRx, query)
+		assert.Regexp(t, safeQueryRx, queryIgnoringConflict)
+		assert.NotNil(t, values)
+		assert.Equal(t, 5, len(values))
+	})
+
+	t.Run("Using a pointer to struct", func(t *testing.T) {
+		query, values := BuildUpdateQueryFromModel("users", &input, input.Id, false)
+		assert.Regexp(t, regularQueryRx, query)
+		assert.NotNil(t, values)
+		assert.Equal(t, 5, len(values))
+	})
+}

@@ -109,6 +109,36 @@ func buildInsertQuery(table string, input map[string]any, skipConflicting bool) 
 	return query, values
 }
 
+func buildUpdateQuery(table string, input map[string]any, id any, skipConflicting bool) (string, []any) {
+	keys := reflect.ValueOf(input).MapKeys()
+	values := []any{}
+	fields := ""
+	query := fmt.Sprintf("UPDATE %s SET ", table)
+
+	for i, v := range keys {
+		n := i + 1
+		key := v.String()
+		fields += fmt.Sprintf("%s = ?", key)
+		if n < len(keys) {
+			fields += ", "
+		}
+
+		values = append(values, input[key])
+	}
+
+	query += fields + " WHERE id = ?"
+
+	if skipConflicting {
+		query += " ON CONFLICT DO NOTHING"
+	}
+
+	query += " RETURNING *"
+
+	values = append(values, id)
+
+	return query, values
+}
+
 func getFieldNameIfExists(_ string, value string, model any) (bool, string) {
 	modelValue := reflect.ValueOf(model)
 	if modelValue.Kind() == reflect.Ptr {
@@ -158,4 +188,34 @@ func BuildInsertQueryFromModel(table string, model any, skipConflicting bool) (s
 	}
 
 	return buildInsertQuery(table, inputValues, skipConflicting)
+}
+
+func BuildUpdateQueryFromModel(table string, model any, id any, skipConflicting bool) (string, []any) {
+	inputValues := map[string]any{}
+	modelValue := reflect.ValueOf(model)
+
+	if modelValue.Kind() == reflect.Ptr {
+		modelValue = modelValue.Elem()
+	}
+
+	for i := 0; i < modelValue.NumField(); i++ {
+		tableFieldName := modelValue.Type().Field(i).Tag.Get(TAG_NAME)
+
+		if tableFieldName == "" || tableFieldName == "-" {
+			continue
+		}
+
+		field := modelValue.Field(i)
+		kind := field.Kind()
+
+		if kind == reflect.String || kind == reflect.Slice || kind == reflect.Map {
+			if field.Len() == 0 {
+				continue
+			}
+		}
+
+		inputValues[tableFieldName] = modelValue.Field(i).Interface()
+	}
+
+	return buildUpdateQuery(table, inputValues, id, skipConflicting)
 }
