@@ -94,8 +94,8 @@ func TestBuildInsertQuery(t *testing.T) {
 }
 
 func TestBuildUpdateQuery(t *testing.T) {
-	regularQueryRx := `UPDATE users SET (\b.*\b = \?,? ?){3}WHERE id = \? RETURNING \*`
-	safeQueryRx := `UPDATE users SET (\b.*\b = \?,? ?){3}WHERE id = \? ON CONFLICT DO NOTHING RETURNING \*`
+	regularQueryRx := `UPDATE users SET (\b.*\b = \$\d,? ?){3}WHERE id = \$\d RETURNING \*`
+	safeQueryRx := `UPDATE users SET (\b.*\b = \$\d,? ?){3}WHERE id = \$\d ON CONFLICT DO NOTHING RETURNING \*`
 
 	input := struct {
 		Id            string   `db:"id"`

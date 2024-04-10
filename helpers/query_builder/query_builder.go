@@ -118,7 +118,7 @@ func buildUpdateQuery(table string, input map[string]any, id any, skipConflictin
 	for i, v := range keys {
 		n := i + 1
 		key := v.String()
-		fields += fmt.Sprintf("%s = ?", key)
+		fields += fmt.Sprintf("%s = $%d", key, n)
 		if n < len(keys) {
 			fields += ", "
 		}
@@ -126,7 +126,7 @@ func buildUpdateQuery(table string, input map[string]any, id any, skipConflictin
 		values = append(values, input[key])
 	}
 
-	query += fields + " WHERE id = ?"
+	query += fields + fmt.Sprintf(" WHERE id = $%d", len(keys)+1)
 
 	if skipConflicting {
 		query += " ON CONFLICT DO NOTHING"
