@@ -54,6 +54,22 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 
 	assert.Equal(t, "SELECT * FROM users WHERE id > $1 ORDER BY name ASC, id ASC LIMIT 6", query)
 	assert.Equal(t, 1, len(args))
+
+	query, args = BuildPaginationQueryFromModel(PaginationQueryInput{
+		InitialQuery: "SELECT * FROM users WHERE email_verified = true",
+		Limit:        5,
+		NextCursor:   "MjAyMy0xMC0yOFQxODo1NDo1My41MjQxNTJaLDFkMjEzNDY1LTRjYzktNGI4Yy1hM2JmLWQ5MTFiODhiMTk3Nw==",
+		Sort: struct {
+			Field string
+			Order TableSortOrder
+		}{
+			Field: "name",
+			Order: "ASC",
+		},
+	}, &User{})
+
+	assert.Equal(t, "SELECT * FROM users WHERE email_verified = true AND id > $1 ORDER BY name ASC, id ASC LIMIT 6", query)
+	assert.Equal(t, 1, len(args))
 }
 
 func TestBuildInsertQuery(t *testing.T) {

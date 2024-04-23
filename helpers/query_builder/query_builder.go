@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -44,10 +45,15 @@ func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (strin
 
 		cursor := strings.Split(string(decodedBytes), ",")
 		if len(cursor) == 2 {
-			query = fmt.Sprintf("%s WHERE id > $1", input.InitialQuery)
+			joiningClause := "WHERE"
+			if match, _ := regexp.MatchString("WHERE", input.InitialQuery); match {
+				joiningClause = "AND"
+			}
+
+			query = fmt.Sprintf("%s %s id > $1", input.InitialQuery, joiningClause)
 
 			if !useCustomSorting {
-				query = fmt.Sprintf("%s WHERE (created_at, id) > ($1, $2)", input.InitialQuery)
+				query = fmt.Sprintf("%s %s (created_at, id) > ($1, $2)", input.InitialQuery, joiningClause)
 				parsedTime, err := time.Parse(time.RFC3339Nano, cursor[0])
 
 				if err != nil {
