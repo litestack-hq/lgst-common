@@ -43,17 +43,16 @@ func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (strin
 		}
 
 		cursor := strings.Split(string(decodedBytes), ",")
+		parsedTime, err := time.Parse(time.RFC3339Nano, cursor[0])
+
 		if len(cursor) == 2 {
 			joiningClause := "WHERE"
 			if match, _ := regexp.MatchString("WHERE", input.InitialQuery); match {
 				joiningClause = "AND"
 			}
 
-			query = fmt.Sprintf("%s %s id > $1", input.InitialQuery, joiningClause)
-
 			if !useCustomSorting {
 				query = fmt.Sprintf("%s %s (created_at, id) > ($1, $2)", input.InitialQuery, joiningClause)
-				parsedTime, err := time.Parse(time.RFC3339Nano, cursor[0])
 
 				if err != nil {
 					slog.Error(
@@ -65,6 +64,12 @@ func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (strin
 				}
 
 				args = append(args, parsedTime)
+			} else {
+				sortDirection := ">"
+				if input.Sort.Order == "DESC" {
+					sortDirection = "<"
+				}
+				query = fmt.Sprintf("%s %s (%s, id) %s ($1, $2)", input.InitialQuery, joiningClause, sortFieldName, sortDirection)
 			}
 
 			args = append(args, cursor[1])

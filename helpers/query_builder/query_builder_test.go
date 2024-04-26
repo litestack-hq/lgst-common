@@ -52,7 +52,7 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 		},
 	}, &User{})
 
-	assert.Equal(t, "SELECT * FROM users WHERE id > $1 ORDER BY name ASC, id ASC LIMIT 6", query)
+	assert.Equal(t, "SELECT * FROM users WHERE (name, id) > ($1, $2) ORDER BY name ASC, id ASC LIMIT 6", query)
 	assert.Equal(t, 1, len(args))
 
 	query, args = BuildPaginationQueryFromModel(PaginationQueryInput{
@@ -68,7 +68,7 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 		},
 	}, &User{})
 
-	assert.Equal(t, "SELECT * FROM users WHERE email_verified = true AND id > $1 ORDER BY name ASC, id ASC LIMIT 6", query)
+	assert.Equal(t, "SELECT * FROM users WHERE email_verified = true AND (name, id) > ($1, $2) ORDER BY name ASC, id ASC LIMIT 6", query)
 	assert.Equal(t, 1, len(args))
 }
 
