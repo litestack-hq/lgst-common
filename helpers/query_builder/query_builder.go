@@ -43,7 +43,6 @@ func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (strin
 		}
 
 		cursor := strings.Split(string(decodedBytes), ",")
-		parsedTime, err := time.Parse(time.RFC3339Nano, cursor[0])
 
 		if len(cursor) == 2 {
 			joiningClause := "WHERE"
@@ -53,7 +52,7 @@ func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (strin
 
 			if !useCustomSorting {
 				query = fmt.Sprintf("%s %s (created_at, id) > ($1, $2)", input.InitialQuery, joiningClause)
-
+				parsedTime, err := time.Parse(time.RFC3339Nano, cursor[0])
 				if err != nil {
 					slog.Error(
 						"failed to parse cursor created_at",
@@ -69,7 +68,14 @@ func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (strin
 				if input.Sort.Order == "DESC" {
 					sortDirection = "<"
 				}
-				query = fmt.Sprintf("%s %s (%s, id) %s ($1, $2)", input.InitialQuery, joiningClause, sortFieldName, sortDirection)
+
+				if input.Sort.CursorValue != nil {
+					query = fmt.Sprintf("%s %s (%s, id) %s ($1, $2)", input.InitialQuery, joiningClause, sortFieldName, sortDirection)
+					args = append(args, input.Sort.CursorValue)
+				} else {
+					query = fmt.Sprintf("%s %s id %s $1", input.InitialQuery, joiningClause, sortDirection)
+				}
+
 			}
 
 			args = append(args, cursor[1])

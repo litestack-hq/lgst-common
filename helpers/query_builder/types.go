@@ -14,8 +14,9 @@ type PaginationQueryInput struct {
 	Limit        int
 	NextCursor   string
 	Sort         struct {
-		Field string
-		Order TableSortOrder
+		Field       string
+		Order       TableSortOrder
+		CursorValue any
 	}
 	Search struct {
 		Query  string

@@ -28,8 +28,9 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 		Limit:        5,
 		NextCursor:   "MjAyMy0xMC0yOFQxODo1NDo1My41MjQxNTJaLDFkMjEzNDY1LTRjYzktNGI4Yy1hM2JmLWQ5MTFiODhiMTk3Nw==",
 		Sort: struct {
-			Field string
-			Order TableSortOrder
+			Field       string
+			Order       TableSortOrder
+			CursorValue any
 		}{
 			Field: "",
 			Order: "ASC",
@@ -44,32 +45,36 @@ func TestBuildPaginationQueryFromModel(t *testing.T) {
 		Limit:        5,
 		NextCursor:   "MjAyMy0xMC0yOFQxODo1NDo1My41MjQxNTJaLDFkMjEzNDY1LTRjYzktNGI4Yy1hM2JmLWQ5MTFiODhiMTk3Nw==",
 		Sort: struct {
-			Field string
-			Order TableSortOrder
+			Field       string
+			Order       TableSortOrder
+			CursorValue any
 		}{
-			Field: "name",
-			Order: "ASC",
+			Field:       "name",
+			Order:       "ASC",
+			CursorValue: time.Now(),
 		},
 	}, &User{})
 
 	assert.Equal(t, "SELECT * FROM users WHERE (name, id) > ($1, $2) ORDER BY name ASC, id ASC LIMIT 6", query)
-	assert.Equal(t, 1, len(args))
+	assert.Equal(t, 2, len(args))
 
 	query, args = BuildPaginationQueryFromModel(PaginationQueryInput{
 		InitialQuery: "SELECT * FROM users WHERE email_verified = true",
 		Limit:        5,
 		NextCursor:   "MjAyMy0xMC0yOFQxODo1NDo1My41MjQxNTJaLDFkMjEzNDY1LTRjYzktNGI4Yy1hM2JmLWQ5MTFiODhiMTk3Nw==",
 		Sort: struct {
-			Field string
-			Order TableSortOrder
+			Field       string
+			Order       TableSortOrder
+			CursorValue any
 		}{
-			Field: "name",
-			Order: "ASC",
+			Field:       "name",
+			Order:       "ASC",
+			CursorValue: time.Now(),
 		},
 	}, &User{})
 
 	assert.Equal(t, "SELECT * FROM users WHERE email_verified = true AND (name, id) > ($1, $2) ORDER BY name ASC, id ASC LIMIT 6", query)
-	assert.Equal(t, 1, len(args))
+	assert.Equal(t, 2, len(args))
 }
 
 func TestBuildInsertQuery(t *testing.T) {
