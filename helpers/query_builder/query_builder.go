@@ -16,10 +16,9 @@ const (
 )
 
 func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (string, []any) {
-	queryLimit := 1
 	query := input.InitialQuery
 	args := []any{}
-	queryLimit = int(queryLimit + int(math.Abs(float64(input.Limit))))
+	queryLimit := int(1 + int(math.Abs(float64(input.Limit))))
 	orderBy := " ORDER BY created_at ASC, id ASC"
 
 	useCustomSorting, sortFieldName := getFieldNameIfExists(TAG_NAME, input.Sort.Field, model)
