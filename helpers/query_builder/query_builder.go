@@ -46,7 +46,10 @@ func BuildPaginationQueryFromModel(input PaginationQueryInput, model any) (strin
 
 		if len(cursor) == 2 {
 			joiningClause := "WHERE"
-			if match, _ := regexp.MatchString("WHERE", input.InitialQuery); match {
+
+			countWhere := len((regexp.MustCompile(`\bWHERE\b`)).FindAllString(input.InitialQuery, -1))
+			hasExists, _ := regexp.MatchString("EXISTS", input.InitialQuery)
+			if (!hasExists && countWhere > 0) || (hasExists && countWhere > 2) {
 				joiningClause = "AND"
 			}
 
